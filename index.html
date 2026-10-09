@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Слюда — заметки</title>
+<meta name="description" content="Заметки в markdown со ссылками, обратными ссылками, тегами и графом. Работает локально и с GitHub Pages.">
+<meta name="theme-color" content="#1b1d22">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="stylesheet" href="style.css?v=1">
+<script>
+  /* тема до первой отрисовки — без мигания */
+  (function(){ try{
+    var t = localStorage.getItem('sluda.theme');
+    if(!t) t = matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+    document.documentElement.dataset.theme = t;
+  }catch(e){ document.documentElement.dataset.theme = 'dark'; } })();
+</script>
+</head>
+<body>
+<div class="app" id="app">
+
+  <div class="leftwrap" id="leftwrap">
+    <nav class="ribbon" aria-label="Панели">
+      <button class="rb" data-cmd="pane-files" data-icon="folder" title="Файлы"></button>
+      <button class="rb" data-cmd="pane-search" data-icon="search" title="Поиск (Ctrl+Shift+F)"></button>
+      <button class="rb" data-cmd="pane-tags" data-icon="tag" title="Теги"></button>
+      <span class="rb-sep"></span>
+      <button class="rb" data-cmd="switcher" data-icon="jump" title="Быстрый переход (Ctrl+O)"></button>
+      <button class="rb" data-cmd="graph" data-icon="graph" title="Граф (Ctrl+G)"></button>
+      <button class="rb" data-cmd="daily" data-icon="calendar" title="Заметка на сегодня"></button>
+      <span class="rb-fill"></span>
+      <button class="rb" data-cmd="theme" data-icon="moon" title="Светлая / тёмная тема"></button>
+      <button class="rb" data-cmd="vault-menu" data-icon="vault" title="Хранилище: смена, экспорт, импорт"></button>
+    </nav>
+
+    <aside class="side left" id="left">
+      <section class="pane" id="pane-files">
+        <div class="pane-head">
+          <span class="pane-title" id="vault-name">Файлы</span>
+          <button class="ib" data-cmd="new-note" data-icon="file-plus" title="Новая заметка (Ctrl+N)"></button>
+          <button class="ib" data-cmd="new-folder" data-icon="folder-plus" title="Новая папка"></button>
+          <button class="ib" data-cmd="collapse-all" data-icon="collapse" title="Свернуть все папки"></button>
+          <button class="ib" data-cmd="rescan" data-icon="refresh" title="Перечитать хранилище"></button>
+        </div>
+        <div class="tree" id="tree" tabindex="0"></div>
+      </section>
+      <section class="pane" id="pane-search" hidden>
+        <div class="pane-head"><span class="pane-title">Поиск</span></div>
+        <input class="field" id="search-input" type="search" placeholder="Слова или #тег" autocomplete="off" spellcheck="false">
+        <div class="hint">Все слова должны встретиться. <code>#тег</code> — заметки с тегом.</div>
+        <div class="results" id="search-results"></div>
+      </section>
+      <section class="pane" id="pane-tags" hidden>
+        <div class="pane-head"><span class="pane-title">Теги</span></div>
+        <div class="results" id="tag-list"></div>
+      </section>
+    </aside>
+  </div>
+
+  <main class="main">
+    <header class="topbar">
+      <button class="ib only-narrow" data-cmd="toggle-left" data-icon="menu" title="Панель слева"></button>
+      <button class="ib" data-cmd="back" data-icon="left" title="Назад (Alt+←)"></button>
+      <button class="ib" data-cmd="forward" data-icon="right" title="Вперёд (Alt+→)"></button>
+      <div class="crumbs" id="crumbs"></div>
+      <input class="title-input" id="title" spellcheck="false" autocomplete="off" aria-label="Название заметки">
+      <button class="ib" data-cmd="toggle-mode" id="mode-btn" data-icon="book" title="Чтение / правка (Ctrl+E)"></button>
+      <button class="ib" data-cmd="toggle-right" data-icon="panel-right" title="Связи и оглавление"></button>
+    </header>
+
+    <div class="view" id="view-note" hidden>
+      <textarea class="editor" id="editor" spellcheck="true" placeholder="Пиши здесь. [[ — ссылка на заметку, # — тег."></textarea>
+      <article class="preview md" id="preview" hidden></article>
+    </div>
+
+    <div class="view" id="view-graph" hidden>
+      <div class="graph-bar">
+        <div class="seg" role="group" aria-label="Охват графа">
+          <button class="seg-b" data-graph-scope="all">Весь граф</button>
+          <button class="seg-b" data-graph-scope="local">Вокруг заметки</button>
+        </div>
+        <label class="gopt" id="gdepth-wrap">глубина
+          <select id="gdepth"><option>1</option><option selected>2</option><option>3</option></select></label>
+        <label class="gopt"><input type="checkbox" id="g-tags"> теги</label>
+        <label class="gopt"><input type="checkbox" id="g-ghost" checked> несозданные</label>
+        <label class="gopt"><input type="checkbox" id="g-orphans" checked> одиночки</label>
+        <input class="field small" id="g-filter" type="search" placeholder="фильтр" autocomplete="off">
+      </div>
+      <canvas class="graph" id="graph"></canvas>
+      <div class="graph-hint">колесо — масштаб · тянуть фон — сдвиг · клик по точке — открыть</div>
+    </div>
+
+    <div class="view empty" id="view-empty" hidden>
+      <div class="empty-box">
+        <p>Нет открытой заметки.</p>
+        <div class="btnrow">
+          <button class="btn" data-cmd="new-note">Новая заметка</button>
+          <button class="btn ghost" data-cmd="switcher">Найти заметку</button>
+        </div>
+      </div>
+    </div>
+
+    <footer class="status" id="status">
+      <span id="st-save"></span>
+      <span class="st-fill"></span>
+      <span id="st-links"></span>
+      <span id="st-words"></span>
+    </footer>
+  </main>
+
+  <aside class="side right" id="right">
+    <details class="block" open>
+      <summary>Обратные ссылки <span class="count" id="bl-count"></span></summary>
+      <div class="results" id="backlinks"></div>
+    </details>
+    <details class="block">
+      <summary>Упоминания без ссылки <span class="count" id="ul-count"></span></summary>
+      <div class="results" id="unlinked"></div>
+    </details>
+    <details class="block" open>
+      <summary>Исходящие ссылки <span class="count" id="ol-count"></span></summary>
+      <div class="results" id="outlinks"></div>
+    </details>
+    <details class="block" open>
+      <summary>Оглавление</summary>
+      <div class="results" id="outline"></div>
+    </details>
+  </aside>
+</div>
+
+<div class="backdrop" id="backdrop" hidden></div>
+
+<!-- первый экран: выбор хранилища -->
+<div class="start" id="start" hidden>
+  <div class="start-box">
+    <div class="logo" data-icon="logo"></div>
+    <h1>Слюда</h1>
+    <p class="lead">Заметки в обычных файлах markdown. Ссылки <code>[[вот так]]</code>, обратные ссылки, теги и граф связей.</p>
+    <div class="choices">
+      <button class="choice" id="start-reopen" hidden>
+        <b id="start-reopen-name">Открыть папку снова</b>
+        <span>Браузер попросит разрешение ещё раз — так он защищает файлы.</span>
+      </button>
+      <button class="choice" id="start-folder">
+        <b>Открыть папку на компьютере</b>
+        <span>Заметки — настоящие .md файлы в выбранной папке. Подходит и существующая папка Obsidian. Chrome, Edge, Яндекс Браузер на компьютере.</span>
+      </button>
+      <button class="choice" id="start-browser">
+        <b>Хранить в браузере</b>
+        <span>Работает везде, включая телефон. Заметки живут в этом браузере; экспорт в zip — в меню хранилища.</span>
+      </button>
+    </div>
+    <p class="fine" id="start-note"></p>
+  </div>
+</div>
+
+<div class="modal" id="switcher" hidden>
+  <div class="modal-box">
+    <input class="field" id="sw-input" placeholder="Название заметки…" autocomplete="off" spellcheck="false">
+    <div class="sw-list" id="sw-list"></div>
+    <div class="hint">↑↓ — выбор · Enter — открыть · Shift+Enter — создать с таким названием · Esc — закрыть</div>
+  </div>
+</div>
+
+<div class="menu" id="menu" hidden></div>
+<div class="suggest" id="suggest" hidden></div>
+<div class="toast" id="toast" hidden></div>
+<input type="file" id="import-input" webkitdirectory multiple hidden>
+
+<script src="vendor/marked.min.js?v=1"></script>
+<script src="vendor/purify.min.js?v=1"></script>
+<script src="store.js?v=1"></script>
+<script src="md.js?v=1"></script>
+<script src="graph.js?v=1"></script>
+<script src="app.js?v=1"></script>
+</body>
+</html>
