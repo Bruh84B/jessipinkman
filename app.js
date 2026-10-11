@@ -108,13 +108,18 @@ async function boot(){
   $$('[data-icon]').forEach(el => { el.innerHTML = icon(el.dataset.icon); });
   syncThemeIcon();
   bindUI();
-  if('serviceWorker' in navigator && /^https?:$/.test(location.protocol)){
+  if(window.SLUDA_DEMO) document.documentElement.classList.add('demo');
+  if(!window.SLUDA_DEMO && 'serviceWorker' in navigator && /^https?:$/.test(location.protocol)){
     navigator.serviceWorker.register('sw.js').catch(() => {});
   }
   const app = $('#app');
   if(LS.get('leftCollapsed', false)) app.classList.add('left-collapsed');
   if(LS.get('rightCollapsed', false)) app.classList.add('right-collapsed');
 
+  if(window.SLUDA_DEMO){
+    try { return await chooseBrowser(); }
+    catch(e){ return showStart('Браузер не дал сохранить заметки (IndexedDB). В приватном окне так бывает — открой обычное.'); }
+  }
   let m;
   try { m = await meta.get('vault'); }
   catch(e){ showStart('Браузер не дал доступ к хранилищу (IndexedDB). В приватном окне так бывает — открой обычное.'); return; }
@@ -129,7 +134,7 @@ async function boot(){
 
 function showStart(note, reopenHandle){
   $('#start').hidden = false;
-  $('#start-folder').hidden = !FS_SUPPORTED;
+  $('#start-folder').hidden = !FS_SUPPORTED || !!window.SLUDA_DEMO;
   const re = $('#start-reopen');
   re.hidden = !reopenHandle;
   if(reopenHandle){
@@ -495,7 +500,9 @@ async function newNote(dir){
 async function newFolder(dir){
   if(!S.vault) return;
   if(dir === undefined) dir = S.selectedFolder || '';
-  const name = sanitizePath(window.prompt('Название папки', '') || '');
+  const v = await askText('Название новой папки', '');
+  if(v === null) return;
+  const name = sanitizePath(v);
   if(!name) return;
   const path = joinPath(dir, name);
   if(existsCI(path)){ toast('Такая папка уже есть'); return; }
@@ -518,7 +525,7 @@ async function deletePath(path){
   const isDir = !f || f.type === 'dir';
   const name = f && f.type === 'md' ? noteName(path) : baseOf(path);
   const msg = isDir ? 'Удалить папку «' + name + '» вместе со всем содержимым?' : 'Удалить «' + name + '»?';
-  if(!window.confirm(msg + ' Это нельзя отменить.')) return;
+  if(!(await askConfirm(msg + ' Это нельзя отменить.'))) return;
   if(S.cur && under(S.cur, path)){ S.dirty = false; clearTimeout(saveTimer); }
   try { await S.vault.remove(path); } catch(e){ toast('Не удалось удалить: ' + e.message); return; }
   for(const p of Array.from(S.files.keys())) if(under(p, path)) S.files.delete(p);
@@ -603,7 +610,7 @@ async function renameAsk(path){
   const f = S.files.get(path);
   const isMd = f && f.type === 'md';
   const cur = isMd ? noteName(path) : baseOf(path);
-  const v = window.prompt('Новое название', cur);
+  const v = await askText('Новое название', cur);
   if(v === null) return;
   let name = sanitizeName(v);
   if(!name) return;
@@ -1194,6 +1201,11 @@ function vaultMenu(btn){
     '-',
     {label: 'Сменить хранилище…', run: async () => { await flushSave(); showStart(); }},
   ];
+  if(window.SLUDA_DEMO){
+    items.splice(0, items.length,
+      {label: 'Демо: заметки хранятся только в этом браузере', disabled: true},
+      {label: 'Добавить заметки из папки…', run: () => $('#import-input').click()});
+  }
   showMenu(items, r.right + 6, Math.max(8, r.bottom - 180));
 }
 
@@ -1232,6 +1244,30 @@ async function rescan(quiet){
     if(!quiet) toast('Не удалось перечитать: ' + e.message);
   } finally { S.rescanning = false; }
 }
+
+/* ================= окна ввода и подтверждения (системные prompt/confirm работают не везде) ================= */
+let dialogDone = null;
+function openDialog(message, opts){
+  if(dialogDone) dialogDone(null);
+  hideMenu();
+  $('#dlg-msg').textContent = message;
+  const inp = $('#dlg-input'), ok = $('#dlg-ok');
+  inp.hidden = !opts.input;
+  inp.value = opts.value || '';
+  ok.textContent = opts.ok;
+  ok.classList.toggle('danger', !!opts.danger);
+  $('#dialog').hidden = false;
+  setTimeout(() => { if(opts.input){ inp.focus(); inp.select(); } else ok.focus(); }, 0);
+  return new Promise(res => { dialogDone = res; });
+}
+function closeDialog(v){
+  $('#dialog').hidden = true;
+  const done = dialogDone;
+  dialogDone = null;
+  if(done) done(v);
+}
+function askText(message, value){ return openDialog(message, {input: true, value, ok: 'Готово'}); }
+function askConfirm(message){ return openDialog(message, {ok: 'Удалить', danger: true}).then(v => v === true); }
 
 /* ================= меню ================= */
 function showMenu(items, x, y){
@@ -1489,6 +1525,12 @@ function bindUI(){
   });
 
   $('#backdrop').addEventListener('click', closeDrawers);
+  $('#dlg-form').addEventListener('submit', e => {
+    e.preventDefault();
+    closeDialog($('#dlg-input').hidden ? true : $('#dlg-input').value);
+  });
+  $('#dlg-cancel').addEventListener('click', () => closeDialog(null));
+  $('#dialog').addEventListener('click', e => { if(e.target.id === 'dialog') closeDialog(null); });
   window.addEventListener('hashchange', route);
   window.addEventListener('focus', () => { if(S.vault && S.vault.kind === 'folder') rescan(true); });
   document.addEventListener('visibilitychange', () => { if(document.hidden) flushSave(); });
@@ -1502,6 +1544,7 @@ function bindUI(){
     const mod = IS_MAC ? e.metaKey : e.ctrlKey;
     const k = e.key.toLowerCase();
     const code = e.code;
+    if(!$('#dialog').hidden){ if(e.key === 'Escape'){ e.preventDefault(); closeDialog(null); } return; }
     if(e.key === 'Escape'){
       if(!$('#switcher').hidden){ closeSwitcher(); return; }
       if(!$('#menu').hidden){ hideMenu(); return; }

@@ -8,7 +8,7 @@
 <meta name="theme-color" content="#1b1d22">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="manifest" href="manifest.webmanifest">
-<link rel="stylesheet" href="style.css?v=1">
+<link rel="stylesheet" href="style.css?v=2">
 <script>
   /* тема до первой отрисовки — без мигания */
   (function(){ try{
@@ -164,16 +164,27 @@
   </div>
 </div>
 
+<div class="modal" id="dialog" hidden>
+  <form class="modal-box dialog-box" id="dlg-form">
+    <p class="dlg-msg" id="dlg-msg"></p>
+    <input class="field" id="dlg-input" autocomplete="off" spellcheck="false">
+    <div class="btnrow end">
+      <button type="button" class="btn ghost" id="dlg-cancel">Отмена</button>
+      <button type="submit" class="btn" id="dlg-ok">Готово</button>
+    </div>
+  </form>
+</div>
+
 <div class="menu" id="menu" hidden></div>
 <div class="suggest" id="suggest" hidden></div>
 <div class="toast" id="toast" hidden></div>
 <input type="file" id="import-input" webkitdirectory multiple hidden>
 
-<script src="vendor/marked.min.js?v=1"></script>
-<script src="vendor/purify.min.js?v=1"></script>
-<script src="store.js?v=1"></script>
-<script src="md.js?v=1"></script>
-<script src="graph.js?v=1"></script>
-<script src="app.js?v=1"></script>
+<script src="vendor/marked.min.js?v=2"></script>
+<script src="vendor/purify.min.js?v=2"></script>
+<script src="store.js?v=2"></script>
+<script src="md.js?v=2"></script>
+<script src="graph.js?v=2"></script>
+<script src="app.js?v=2"></script>
 </body>
 </html>

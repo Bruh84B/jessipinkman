@@ -1,8 +1,8 @@
 /* Слюда — service worker: офлайн-работа после первого открытия.
    Сначала сеть (всегда свежая версия), без сети — копия из кеша. Только файлы самого приложения. */
-const CACHE = 'sluda-v1';
-const ASSETS = ['./', './index.html', './style.css?v=1', './store.js?v=1', './md.js?v=1', './graph.js?v=1', './app.js?v=1',
-  './vendor/marked.min.js?v=1', './vendor/purify.min.js?v=1', './icon.svg', './manifest.webmanifest'];
+const CACHE = 'sluda-v2';
+const ASSETS = ['./', './index.html', './style.css?v=2', './store.js?v=2', './md.js?v=2', './graph.js?v=2', './app.js?v=2',
+  './vendor/marked.min.js?v=2', './vendor/purify.min.js?v=2', './icon.svg', './manifest.webmanifest'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE)

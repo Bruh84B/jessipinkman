@@ -83,7 +83,7 @@ python -m http.server 8000
 | `sw.js` | офлайн-режим |
 | `vendor/` | [marked](https://github.com/markedjs/marked) (MIT) и [DOMPurify](https://github.com/cure53/DOMPurify) (Apache-2.0 / MPL-2.0), лицензии рядом |
 
-**Выпуск обновления:** подними номер `?v=1` у файлов в `index.html` и в списке `ASSETS` в `sw.js`,
+**Выпуск обновления:** подними номер `?v=2` у файлов в `index.html` и в списке `ASSETS` в `sw.js`,
 а также `CACHE` в `sw.js`. Иначе браузер может показать старую версию из кеша. Это важно и потому,
 что у всех проектов на `<логин>.github.io` общий адрес сайта, а у других проектов там может быть
 свой service worker.

@@ -65,7 +65,7 @@ button{ font: inherit; color: inherit; }
 code, pre, kbd{ font-family: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace; }
 svg{ width: 18px; height: 18px; flex: none; }
 
-.app{ display: flex; height: 100vh; height: 100dvh; }
+.app{ display: flex; height: 100%; }
 
 /* ---------- лента значков и боковые панели ---------- */
 .leftwrap{ display: flex; flex: none; min-height: 0; }
@@ -278,6 +278,12 @@ svg{ width: 18px; height: 18px; flex: none; }
 .sw-i.create, .sg-i.create{ color: var(--accent); }
 .sw-path{ color: var(--faint); font-size: 12.5px; margin-left: auto; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .modal .hint{ padding-top: 8px; }
+.dialog-box{ width: min(440px, 100%); padding: 18px 16px 16px; gap: 12px; align-self: flex-start; }
+.dialog-box .field{ width: 100%; margin: 0; }
+.dlg-msg{ margin: 0; font-size: 15px; line-height: 1.5; }
+.btnrow.end{ justify-content: flex-end; margin-top: 0; }
+.btn.danger{ background: var(--danger); border-color: var(--danger); color: #fff; }
+.btn:focus-visible, .choice:focus-visible, .rb:focus-visible, .ib:focus-visible, .menu-i:focus-visible{ outline: 2px solid var(--accent); outline-offset: 2px; }
 
 .menu{ position: fixed; z-index: 45; min-width: 200px; padding: 5px; background: var(--panel); border: 1px solid var(--line-strong); border-radius: 9px; box-shadow: var(--shadow); }
 .menu-i{ display: block; width: 100%; text-align: left; padding: 7px 10px; border: 0; background: transparent; border-radius: 6px; cursor: pointer; font-size: 14px; }
