@@ -1,12 +1,12 @@
 'use strict';
-/* Слюда — интерфейс: дерево файлов, редактор, чтение, связи, поиск, теги, граф, быстрый переход. */
+/* MindButter — интерфейс: дерево файлов, редактор, чтение, связи, поиск, теги, граф, быстрый переход. */
 
 const $ = s => document.querySelector(s);
 const $$ = s => Array.from(document.querySelectorAll(s));
 const IS_MAC = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
 const LS = {
-  get(k, d){ try { const v = localStorage.getItem('sluda.' + k); return v === null ? d : JSON.parse(v); } catch(e){ return d; } },
-  set(k, v){ try { localStorage.setItem('sluda.' + k, JSON.stringify(v)); } catch(e){} },
+  get(k, d){ try { const v = localStorage.getItem('mindbutter.' + k); return v === null ? d : JSON.parse(v); } catch(e){ return d; } },
+  set(k, v){ try { localStorage.setItem('mindbutter.' + k, JSON.stringify(v)); } catch(e){} },
 };
 
 const FOLDER_SVG = '<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>';
@@ -34,12 +34,24 @@ const ICONS = {
   'panel-right': '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M15 3v18"/>',
   image: '<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-5-5L5 21"/>',
   chev: '<path d="m9 6 6 6-6 6"/>',
-  logo: '<path d="M12 2 4 8l3 13h10l3-13z"/><path d="M4 8h16M12 2 9 8l3 13 3-13z"/>',
+  logo: '<path class="fill" d="M4 10.5 11 7l9 3.5v6.5L13 20.5 4 17z"/><path d="M4 10.5 11 7l9 3.5-7 3.5zM13 14v6.5M4 10.5V17l9 3.5 7-3.5v-6.5"/><path d="M15.5 12.3c0 1.6.2 3.2-.6 3.6-.8.4-1-.9-1-2.2"/>',
+  help: '<circle cx="12" cy="12" r="9"/><path d="M9.5 9.2a2.6 2.6 0 0 1 5 1c0 1.8-2.5 2.3-2.5 3.8M12 17.2v.1"/>',
+  plus: '<path d="M12 5v14M5 12h14"/>',
+  play: '<path d="M7 5v14l11-7z"/>',
+  stop: '<rect x="7" y="7" width="10" height="10" rx="1.5"/>',
+  x: '<path d="M18 6 6 18M6 6l12 12"/>',
+  'panel-left': '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/>',
 };
 function icon(name){
   return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + (ICONS[name] || '') + '</svg>';
 }
-function setIcon(el, name){ el.dataset.icon = name; el.innerHTML = icon(name); }
+/* значок вставляется перед подписью кнопки, подпись не трогаем */
+function setIcon(el, name){
+  el.dataset.icon = name;
+  const old = el.querySelector(':scope > svg');
+  if(old) old.remove();
+  el.insertAdjacentHTML('afterbegin', icon(name));
+}
 
 function plural(n, one, few, many){
   const a = Math.abs(n) % 100, b = a % 10;
@@ -105,9 +117,10 @@ function uniquePath(dir, base, ext){
 
 /* ================= запуск и выбор хранилища ================= */
 async function boot(){
-  $$('[data-icon]').forEach(el => { el.innerHTML = icon(el.dataset.icon); });
+  $$('[data-icon]').forEach(el => setIcon(el, el.dataset.icon));
   syncThemeIcon();
   bindUI();
+  Guide.bind();
   if(window.SLUDA_DEMO) document.documentElement.classList.add('demo');
   if(!window.SLUDA_DEMO && 'serviceWorker' in navigator && /^https?:$/.test(location.protocol)){
     navigator.serviceWorker.register('sw.js').catch(() => {});
@@ -152,7 +165,7 @@ function showStart(note, reopenHandle){
 
 async function chooseFolder(){
   let h;
-  try { h = await window.showDirectoryPicker({mode: 'readwrite', id: 'sluda'}); }
+  try { h = await window.showDirectoryPicker({mode: 'readwrite', id: 'mindbutter'}); }
   catch(e){ if(e.name !== 'AbortError') toast('Не удалось открыть папку: ' + e.message); return; }
   try { await meta.set('vault', {kind: 'folder', handle: h}); } catch(e){ /* не запомнится между запусками — не страшно */ }
   openVault(new FolderVault(h));
@@ -181,6 +194,7 @@ async function openVault(v){
   S.collapsed = new Set(LS.get('collapsed.' + vaultKey(), []));
   renderTree(); renderTags();
   setSave('');
+  if(!LS.get('guideSeen', false)) setTimeout(() => { if($('#start').hidden) Guide.open(0); }, 350);
   const h = location.hash;
   if(h && h !== '#') return route();
   const last = LS.get('last.' + vaultKey(), null);
@@ -219,7 +233,7 @@ function showView(v){
   $('#view-empty').hidden = v !== 'empty';
   const t = $('#title');
   t.hidden = v !== 'note';
-  $('#mode-btn').hidden = !(v === 'note' && S.curType === 'md');
+  $('#mode-seg').hidden = !(v === 'note' && S.curType === 'md');
   if(v === 'graph'){ $('#crumbs').textContent = 'Граф связей'; }
   else if(v === 'empty'){ $('#crumbs').textContent = ''; }
   if(v !== 'note'){ renderRight(); renderStatus(); }
@@ -282,10 +296,12 @@ function applyMode(){
   const read = S.mode === 'read';
   $('#editor').hidden = read;
   $('#preview').hidden = !read;
-  setIcon($('#mode-btn'), read ? 'pen' : 'book');
-  $('#mode-btn').title = read ? 'Перейти к правке (Ctrl+E)' : 'Перейти к чтению (Ctrl+E)';
+  $('#mode-edit').classList.toggle('on', !read);
+  $('#mode-read').classList.toggle('on', read);
+  $('#mode-seg').hidden = false;
   if(read) renderPreview();
 }
+function setMode(m){ if(S.mode !== m) toggleMode(); }
 function toggleMode(){
   if(S.view !== 'note' || S.curType !== 'md') return;
   const ed = $('#editor'), pv = $('#preview');
@@ -671,23 +687,31 @@ function highlightTree(){
 }
 
 /* ================= правая панель: связи и оглавление ================= */
+/* строка для списков: без [[скобок]], решёток заголовков, маркеров списка и звёздочек */
+function plainLine(s){
+  return s
+    .replace(/!?\[\[([^\]|]+)\|([^\]]+)\]\]/g, '$2')
+    .replace(/!?\[\[([^\]]+)\]\]/g, (m, a) => a.replace('#', ' › '))
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+    .replace(/^\s*(?:>\s*)*(?:\[![\w-]+\][+-]?\s*)?/, '')
+    .replace(/^#{1,6}\s+/, '')
+    .replace(/^(?:[-*+]|\d+[.)])\s+(?:\[[ xX]\]\s+)?/, '')
+    .replace(/\*\*|__|==|`/g, '')
+    .trim();
+}
 function lineAround(text, pos){
   const a = text.lastIndexOf('\n', pos - 1) + 1;
   let b = text.indexOf('\n', pos);
   if(b < 0) b = text.length;
-  let s = text.slice(a, b).trim();
-  if(s.length > 160){
-    const rel = pos - a;
-    const st = Math.max(0, rel - 70);
-    s = (st > 0 ? '…' : '') + text.slice(a + st, a + st + 150).trim() + '…';
-  }
+  let s = plainLine(text.slice(a, b));
+  if(s.length > 160) s = s.slice(0, 150).trim() + '…';
   return s;
 }
 function renderRight(){
   const ids = ['backlinks', 'unlinked', 'outlinks', 'outline'];
   if(!S.cur || S.curType !== 'md' || S.view === 'empty' || !S.files.has(S.cur)){
     ids.forEach(id => { $('#' + id).innerHTML = '<div class="hint">Открой заметку.</div>'; });
-    ['bl-count', 'ul-count', 'ol-count'].forEach(id => { $('#' + id).textContent = ''; });
+    ['bl-count', 'ul-count', 'ol-count', 'links-n'].forEach(id => { $('#' + id).textContent = ''; });
     return;
   }
   const cur = S.cur, name = noteName(cur), lname = name.toLowerCase();
@@ -701,6 +725,7 @@ function renderRight(){
   }
   bl.sort((a, b) => collator.compare(noteName(a.p), noteName(b.p)));
   $('#bl-count').textContent = bl.length || '';
+  $('#links-n').textContent = bl.length || '';
   $('#backlinks').innerHTML = bl.length ? bl.map(x =>
     '<div class="res" data-open="' + escHtml(x.p) + '"><div class="res-name">' + escHtml(noteName(x.p)) + '</div>' +
     x.hits.slice(0, 3).map(h => '<div class="res-snip">' + escHtml(lineAround(x.f.text, h.pos)) + '</div>').join('') + '</div>'
@@ -784,7 +809,7 @@ function runSearch(q){
       x.snips.map(s => '<div class="res-snip">' + highlight(s, hl) + '</div>').join('') + '</div>').join('');
 }
 function searchFor(q){
-  setPane('search', true);
+  setPane('search');
   const inp = $('#search-input');
   inp.value = q;
   runSearch(q);
@@ -804,18 +829,13 @@ function renderTags(){
 
 /* ================= левая панель и выдвижные панели на телефоне ================= */
 function isNarrow(){ return window.matchMedia('(max-width: 820px)').matches; }
-function setPane(name, forceOpen){
+function setPane(name){
   const app = $('#app');
-  if(!isNarrow() && S.leftPane === name && !app.classList.contains('left-collapsed') && !forceOpen){
-    app.classList.add('left-collapsed');
-    LS.set('leftCollapsed', true);
-    return;
-  }
   S.leftPane = name;
   app.classList.remove('left-collapsed');
   LS.set('leftCollapsed', false);
   for(const p of ['files', 'search', 'tags']) $('#pane-' + p).hidden = p !== name;
-  for(const b of $$('.ribbon [data-cmd^="pane-"]')) b.classList.toggle('on', b.dataset.cmd === 'pane-' + name);
+  for(const b of $$('.tab[data-cmd^="pane-"]')){ const on = b.dataset.cmd === 'pane-' + name; b.classList.toggle('on', on); b.setAttribute('aria-selected', on); }
   if(name === 'search') setTimeout(() => $('#search-input').focus(), 0);
 }
 function openLeftDrawer(){ if(isNarrow()){ $('#leftwrap').classList.add('open'); $('#backdrop').hidden = false; } }
@@ -1159,7 +1179,7 @@ async function exportZip(){
   const blob = await makeZip(entries);
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = 'sluda-' + todayKey() + '.zip';
+  a.download = 'mindbutter-' + todayKey() + '.zip';
   document.body.appendChild(a);
   a.click();
   a.remove();
@@ -1198,15 +1218,17 @@ function vaultMenu(btn){
     {label: 'Скачать всё в zip', run: exportZip},
     {label: 'Добавить заметки из папки…', run: () => $('#import-input').click()},
     {label: 'Перечитать хранилище', run: () => rescan(false)},
+    {label: 'Инструкция', run: () => Guide.open(0)},
     '-',
     {label: 'Сменить хранилище…', run: async () => { await flushSave(); showStart(); }},
   ];
   if(window.SLUDA_DEMO){
     items.splice(0, items.length,
       {label: 'Демо: заметки хранятся только в этом браузере', disabled: true},
-      {label: 'Добавить заметки из папки…', run: () => $('#import-input').click()});
+      {label: 'Добавить заметки из папки…', run: () => $('#import-input').click()},
+      {label: 'Инструкция', run: () => Guide.open(0)});
   }
-  showMenu(items, r.right + 6, Math.max(8, r.bottom - 180));
+  showMenu(items, r.right + 6, Math.max(8, r.bottom - 210));
 }
 
 /* изменения снаружи (например, правка той же папки в другой программе) подхватываем при возврате в окно */
@@ -1302,12 +1324,14 @@ function treeMenu(el, x, y){
 /* ================= тема ================= */
 function syncThemeIcon(){
   const b = $('[data-cmd="theme"]');
-  if(b) setIcon(b, document.documentElement.dataset.theme === 'light' ? 'moon' : 'sun');
+  if(b) setIcon(b, document.documentElement.dataset.theme === 'dark' ? 'sun' : 'moon');
 }
 function toggleTheme(){
-  const t = document.documentElement.dataset.theme === 'light' ? 'dark' : 'light';
+  const t = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
   document.documentElement.dataset.theme = t;
-  try { localStorage.setItem('sluda.theme', t); } catch(e){}
+  try { localStorage.setItem('mindbutter.theme', t); } catch(e){}
+  const m = document.querySelector('meta[name=theme-color]');
+  if(m) m.content = t === 'dark' ? '#1c1e23' : '#f7f7f3';
   syncThemeIcon();
   if(S.graph && S.view === 'graph') S.graph.redraw();
 }
@@ -1331,10 +1355,18 @@ const CMD = {
   },
   rescan: () => rescan(false),
   'toggle-left': () => {
+    if(!isNarrow()){
+      const c = $('#app').classList.toggle('left-collapsed');
+      LS.set('leftCollapsed', c);
+      return;
+    }
     const open = !$('#leftwrap').classList.contains('open');
     closeDrawers();
     if(open){ $('#leftwrap').classList.add('open'); $('#backdrop').hidden = false; }
   },
+  'mode-edit': () => setMode('edit'),
+  'mode-read': () => setMode('read'),
+  guide: () => Guide.open(0),
   'toggle-right': toggleRight,
   'toggle-mode': toggleMode,
   back: () => history.back(),
@@ -1545,6 +1577,7 @@ function bindUI(){
     const k = e.key.toLowerCase();
     const code = e.code;
     if(!$('#dialog').hidden){ if(e.key === 'Escape'){ e.preventDefault(); closeDialog(null); } return; }
+    if(Guide.isOpen()){ Guide.key(e); return; }
     if(e.key === 'Escape'){
       if(!$('#switcher').hidden){ closeSwitcher(); return; }
       if(!$('#menu').hidden){ hideMenu(); return; }
@@ -1558,7 +1591,7 @@ function bindUI(){
     if(mod && !e.shiftKey && code === 'KeyE'){ e.preventDefault(); toggleMode(); return; }
     if(mod && !e.shiftKey && code === 'KeyG'){ e.preventDefault(); location.hash = 'graph'; return; }
     if(mod && !e.shiftKey && code === 'KeyS'){ e.preventDefault(); flushSave().then(() => toast('Сохранено')); return; }
-    if(mod && e.shiftKey && code === 'KeyF'){ e.preventDefault(); setPane('search', true); openLeftDrawer(); return; }
+    if(mod && e.shiftKey && code === 'KeyF'){ e.preventDefault(); setPane('search'); openLeftDrawer(); return; }
     if(e.altKey && !mod && (k === 'arrowleft' || k === 'arrowright')){
       const editing = /^(TEXTAREA|INPUT)$/.test(document.activeElement && document.activeElement.tagName);
       if(IS_MAC && editing) return;
@@ -1571,9 +1604,12 @@ function bindUI(){
 /* ================= приветственные заметки ================= */
 const WELCOME = {
   'Добро пожаловать.md':
-`# Добро пожаловать в Слюду
+`# Добро пожаловать в MindButter
 
-Слюда — заметки в обычных файлах markdown, связанные ссылками. По механике похоже на Obsidian: ссылки, обратные ссылки, теги, граф.
+MindButter — заметки в обычных файлах markdown, связанные ссылками. Ссылки, обратные ссылки, теги и граф.
+
+> [!tip] Инструкция с картинками и озвучкой
+> Кнопка «?» в ленте слева (на телефоне — в меню ☰).
 
 ## С чего начать
 - [[Ссылки]] — главное, ради чего всё это.
@@ -1582,7 +1618,7 @@ const WELCOME = {
 - [[Хранение и GitHub]] — где лежат заметки и как их не потерять.
 
 ## Два режима
-**Правка** — пишешь markdown. **Чтение** — видишь оформленный текст и кликаешь по ссылкам. Переключение — кнопка справа вверху или \`Ctrl+E\`.
+**Правка** — пишешь markdown. **Чтение** — видишь оформленный текст и кликаешь по ссылкам. Переключатель «Правка | Чтение» — вверху справа, или \`Ctrl+E\`.
 
 > [!tip] Попробуй сразу
 > Напиши где-нибудь [[Моя первая мысль]], перейди в чтение и кликни по ссылке. Заметка создастся сама.
@@ -1602,7 +1638,7 @@ const WELCOME = {
 ![[Горячие клавиши#Навигация]]
 
 ## Обратные ссылки
-Справа (кнопка с панелью вверху) видно, **кто ссылается на эту заметку**. Открой [[Граф]] — там в обратных ссылках будет эта заметка.
+Кнопка «Связи» вверху справа показывает, **кто ссылается на эту заметку**. Открой [[Граф]] — там в обратных ссылках будет эта заметка.
 
 ## Переименование
 Меняешь название в заголовке сверху — ссылки во всех заметках обновляются сами.
@@ -1614,11 +1650,11 @@ const WELCOME = {
 
 Тег — слово с решёткой: #идея, #проект/слюда. Вложенные теги пишутся через «/».
 
-- Вкладка с тегами — слева, значок ярлыка. Клик по тегу ищет все заметки с ним.
-- Поиск — значок лупы или \`Ctrl+Shift+F\`. Несколько слов — все должны встретиться.
+- Вкладка «Теги» — слева. Клик по тегу ищет все заметки с ним.
+- Вкладка «Поиск» — там же, или \`Ctrl+Shift+F\`. Несколько слов — все должны встретиться.
 
 ## Задачи
-- [x] Открыть Слюду
+- [x] Открыть MindButter
 - [ ] Написать первую заметку
 - [ ] Посмотреть на [[Граф]]
 
@@ -1629,7 +1665,7 @@ const WELCOME = {
   'Граф.md':
 `# Граф
 
-Граф — картинка всех заметок и связей между ними. Открыть: значок с точками слева или \`Ctrl+G\`.
+Граф — картинка всех заметок и связей между ними. Открыть: кнопка «Граф» в ленте слева или \`Ctrl+G\`.
 
 - **Весь граф** — все заметки.
 - **Вокруг заметки** — только соседи текущей (глубина 1–3).
@@ -1668,7 +1704,7 @@ const WELCOME = {
 `# Хранение и GitHub
 
 > [!warning] Где лежат заметки
-> Сейчас — **в этом браузере**. Если очистить данные сайта, заметки пропадут. Раз в неделю скачивай архив: значок хранилища слева внизу → «Скачать всё в zip».
+> Сейчас — **в этом браузере**. Если очистить данные сайта, заметки пропадут. Раз в неделю скачивай архив: кнопка «Хранилище» в ленте слева → «Скачать всё в zip».
 
 ## Два способа хранить
 1. **В браузере** — работает везде, включая телефон.

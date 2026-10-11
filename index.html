@@ -3,57 +3,63 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Слюда — заметки</title>
+<title>MindButter</title>
 <meta name="description" content="Заметки в markdown со ссылками, обратными ссылками, тегами и графом. Работает локально и с GitHub Pages.">
-<meta name="theme-color" content="#1b1d22">
+<meta name="theme-color" content="#f7f7f3">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="manifest" href="manifest.webmanifest">
-<link rel="stylesheet" href="style.css?v=2">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Literata:ital,opsz,wght@0,7..72,400;0,7..72,600;1,7..72,400&display=swap">
+<link rel="stylesheet" href="style.css?v=3">
 <script>
   /* тема до первой отрисовки — без мигания */
   (function(){ try{
-    var t = localStorage.getItem('sluda.theme');
-    if(!t) t = matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+    var t = localStorage.getItem('mindbutter.theme');
+    if(!t) t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
     document.documentElement.dataset.theme = t;
-  }catch(e){ document.documentElement.dataset.theme = 'dark'; } })();
+  }catch(e){} })();
 </script>
 </head>
 <body>
 <div class="app" id="app">
 
   <div class="leftwrap" id="leftwrap">
-    <nav class="ribbon" aria-label="Панели">
-      <button class="rb" data-cmd="pane-files" data-icon="folder" title="Файлы"></button>
-      <button class="rb" data-cmd="pane-search" data-icon="search" title="Поиск (Ctrl+Shift+F)"></button>
-      <button class="rb" data-cmd="pane-tags" data-icon="tag" title="Теги"></button>
-      <span class="rb-sep"></span>
-      <button class="rb" data-cmd="switcher" data-icon="jump" title="Быстрый переход (Ctrl+O)"></button>
-      <button class="rb" data-cmd="graph" data-icon="graph" title="Граф (Ctrl+G)"></button>
-      <button class="rb" data-cmd="daily" data-icon="calendar" title="Заметка на сегодня"></button>
+    <nav class="ribbon" aria-label="Действия">
+      <button class="rb" data-cmd="switcher" data-icon="jump" title="Быстрый переход к заметке (Ctrl+O)" aria-label="Быстрый переход"><span class="rb-label">Переход</span></button>
+      <button class="rb" data-cmd="graph" data-icon="graph" title="Граф связей (Ctrl+G)" aria-label="Граф связей"><span class="rb-label">Граф</span></button>
+      <button class="rb" data-cmd="daily" data-icon="calendar" title="Заметка на сегодня" aria-label="Заметка на сегодня"><span class="rb-label">Сегодня</span></button>
       <span class="rb-fill"></span>
-      <button class="rb" data-cmd="theme" data-icon="moon" title="Светлая / тёмная тема"></button>
-      <button class="rb" data-cmd="vault-menu" data-icon="vault" title="Хранилище: смена, экспорт, импорт"></button>
+      <button class="rb rb-help" data-cmd="guide" data-icon="help" title="Инструкция" aria-label="Инструкция"><span class="rb-label">Инструкция</span></button>
+      <button class="rb" data-cmd="theme" data-icon="moon" title="Светлая / тёмная тема" aria-label="Сменить тему"><span class="rb-label">Тема</span></button>
+      <button class="rb" data-cmd="vault-menu" data-icon="vault" title="Хранилище: архив, импорт, смена" aria-label="Хранилище"><span class="rb-label">Хранилище</span></button>
     </nav>
 
     <aside class="side left" id="left">
+      <div class="side-top">
+        <button class="new-note" data-cmd="new-note" data-icon="plus" title="Новая заметка (Ctrl+N)">Новая заметка</button>
+      </div>
+      <div class="tabs" role="tablist" aria-label="Боковая панель">
+        <button class="tab on" role="tab" data-cmd="pane-files">Файлы</button>
+        <button class="tab" role="tab" data-cmd="pane-search">Поиск</button>
+        <button class="tab" role="tab" data-cmd="pane-tags">Теги</button>
+      </div>
       <section class="pane" id="pane-files">
         <div class="pane-head">
-          <span class="pane-title" id="vault-name">Файлы</span>
-          <button class="ib" data-cmd="new-note" data-icon="file-plus" title="Новая заметка (Ctrl+N)"></button>
-          <button class="ib" data-cmd="new-folder" data-icon="folder-plus" title="Новая папка"></button>
-          <button class="ib" data-cmd="collapse-all" data-icon="collapse" title="Свернуть все папки"></button>
-          <button class="ib" data-cmd="rescan" data-icon="refresh" title="Перечитать хранилище"></button>
+          <span class="pane-title" id="vault-name">Заметки</span>
+          <button class="ib" data-cmd="new-folder" data-icon="folder-plus" title="Новая папка" aria-label="Новая папка"></button>
+          <button class="ib" data-cmd="collapse-all" data-icon="collapse" title="Свернуть все папки" aria-label="Свернуть все папки"></button>
+          <button class="ib" data-cmd="rescan" data-icon="refresh" title="Перечитать хранилище" aria-label="Перечитать хранилище"></button>
         </div>
         <div class="tree" id="tree" tabindex="0"></div>
       </section>
       <section class="pane" id="pane-search" hidden>
-        <div class="pane-head"><span class="pane-title">Поиск</span></div>
         <input class="field" id="search-input" type="search" placeholder="Слова или #тег" autocomplete="off" spellcheck="false">
-        <div class="hint">Все слова должны встретиться. <code>#тег</code> — заметки с тегом.</div>
+        <div class="hint">Найдутся заметки, где есть все слова. <code>#тег</code> — заметки с этим тегом.</div>
         <div class="results" id="search-results"></div>
       </section>
       <section class="pane" id="pane-tags" hidden>
-        <div class="pane-head"><span class="pane-title">Теги</span></div>
+        <div class="hint" style="padding-top:6px">Нажми на тег — покажу заметки с ним.</div>
         <div class="results" id="tag-list"></div>
       </section>
     </aside>
@@ -61,17 +67,22 @@
 
   <main class="main">
     <header class="topbar">
-      <button class="ib only-narrow" data-cmd="toggle-left" data-icon="menu" title="Панель слева"></button>
-      <button class="ib" data-cmd="back" data-icon="left" title="Назад (Alt+←)"></button>
-      <button class="ib" data-cmd="forward" data-icon="right" title="Вперёд (Alt+→)"></button>
+      <button class="ib" data-cmd="toggle-left" data-icon="panel-left" title="Панель слева" aria-label="Панель слева"></button>
+      <button class="ib hide-narrow" data-cmd="back" data-icon="left" title="Назад (Alt+←)" aria-label="Назад"></button>
+      <button class="ib hide-narrow" data-cmd="forward" data-icon="right" title="Вперёд (Alt+→)" aria-label="Вперёд"></button>
       <div class="crumbs" id="crumbs"></div>
-      <input class="title-input" id="title" spellcheck="false" autocomplete="off" aria-label="Название заметки">
-      <button class="ib" data-cmd="toggle-mode" id="mode-btn" data-icon="book" title="Чтение / правка (Ctrl+E)"></button>
-      <button class="ib" data-cmd="toggle-right" data-icon="panel-right" title="Связи и оглавление"></button>
+      <input class="title-input" id="title" spellcheck="false" autocomplete="off" aria-label="Название заметки" title="Название заметки — можно изменить">
+      <div class="seg-mode" id="mode-seg" role="group" aria-label="Режим">
+        <button data-cmd="mode-edit" id="mode-edit" title="Писать текст (Ctrl+E)">Правка</button>
+        <button data-cmd="mode-read" id="mode-read" title="Смотреть оформление и переходить по ссылкам (Ctrl+E)">Чтение</button>
+      </div>
+      <button class="links-btn" data-cmd="toggle-right" data-icon="panel-right" title="Обратные ссылки и оглавление" aria-label="Связи">
+        <span class="lbl">Связи</span><span class="n" id="links-n"></span>
+      </button>
     </header>
 
     <div class="view" id="view-note" hidden>
-      <textarea class="editor" id="editor" spellcheck="true" placeholder="Пиши здесь. [[ — ссылка на заметку, # — тег."></textarea>
+      <textarea class="editor" id="editor" spellcheck="true" placeholder="Начни писать. Ссылка на заметку — [[название]], тег — #слово."></textarea>
       <article class="preview md" id="preview" hidden></article>
     </div>
 
@@ -94,10 +105,11 @@
 
     <div class="view empty" id="view-empty" hidden>
       <div class="empty-box">
-        <p>Нет открытой заметки.</p>
+        <p>Здесь откроется заметка.</p>
+        <p class="mut">Создай новую или выбери из списка слева.</p>
         <div class="btnrow">
           <button class="btn" data-cmd="new-note">Новая заметка</button>
-          <button class="btn ghost" data-cmd="switcher">Найти заметку</button>
+          <button class="btn ghost" data-cmd="guide">Как пользоваться</button>
         </div>
       </div>
     </div>
@@ -112,7 +124,7 @@
 
   <aside class="side right" id="right">
     <details class="block" open>
-      <summary>Обратные ссылки <span class="count" id="bl-count"></span></summary>
+      <summary>Ссылаются сюда <span class="count" id="bl-count"></span></summary>
       <div class="results" id="backlinks"></div>
     </details>
     <details class="block">
@@ -120,7 +132,7 @@
       <div class="results" id="unlinked"></div>
     </details>
     <details class="block" open>
-      <summary>Исходящие ссылки <span class="count" id="ol-count"></span></summary>
+      <summary>Ссылки из заметки <span class="count" id="ol-count"></span></summary>
       <div class="results" id="outlinks"></div>
     </details>
     <details class="block" open>
@@ -136,20 +148,20 @@
 <div class="start" id="start" hidden>
   <div class="start-box">
     <div class="logo" data-icon="logo"></div>
-    <h1>Слюда</h1>
+    <h1>MindButter</h1>
     <p class="lead">Заметки в обычных файлах markdown. Ссылки <code>[[вот так]]</code>, обратные ссылки, теги и граф связей.</p>
     <div class="choices">
       <button class="choice" id="start-reopen" hidden>
         <b id="start-reopen-name">Открыть папку снова</b>
         <span>Браузер попросит разрешение ещё раз — так он защищает файлы.</span>
       </button>
-      <button class="choice" id="start-folder">
-        <b>Открыть папку на компьютере</b>
-        <span>Заметки — настоящие .md файлы в выбранной папке. Подходит и существующая папка Obsidian. Chrome, Edge, Яндекс Браузер на компьютере.</span>
-      </button>
       <button class="choice" id="start-browser">
         <b>Хранить в браузере</b>
-        <span>Работает везде, включая телефон. Заметки живут в этом браузере; экспорт в zip — в меню хранилища.</span>
+        <span>Работает везде, включая телефон. Заметки живут в этом браузере; архив в zip — в меню «Хранилище».</span>
+      </button>
+      <button class="choice" id="start-folder">
+        <b>Открыть папку на компьютере</b>
+        <span>Заметки — настоящие .md файлы в выбранной папке. Подходит и папка Obsidian. Chrome, Edge или Яндекс Браузер на компьютере.</span>
       </button>
     </div>
     <p class="fine" id="start-note"></p>
@@ -175,16 +187,39 @@
   </form>
 </div>
 
+<!-- инструкция: картинка, текст, озвучка -->
+<div class="modal guide" id="guide" hidden>
+  <div class="guide-box" role="dialog" aria-modal="true" aria-labelledby="guide-title">
+    <div class="guide-art" id="guide-art"></div>
+    <div class="guide-body">
+      <div class="guide-step" id="guide-step"></div>
+      <h2 id="guide-title"></h2>
+      <p id="guide-text"></p>
+      <div class="guide-voice" id="guide-voice">
+        <button class="btn ghost small listen" id="guide-listen" data-icon="play">Послушать</button>
+        <label><input type="checkbox" id="guide-auto"> озвучивать каждый шаг</label>
+      </div>
+    </div>
+    <div class="guide-nav">
+      <button class="btn ghost" id="guide-prev">Назад</button>
+      <div class="dots" id="guide-dots"></div>
+      <button class="btn" id="guide-next">Дальше</button>
+    </div>
+    <button class="ib guide-close" id="guide-close" data-icon="x" title="Закрыть (Esc)" aria-label="Закрыть инструкцию"></button>
+  </div>
+</div>
+
 <div class="menu" id="menu" hidden></div>
 <div class="suggest" id="suggest" hidden></div>
 <div class="toast" id="toast" hidden></div>
 <input type="file" id="import-input" webkitdirectory multiple hidden>
 
-<script src="vendor/marked.min.js?v=2"></script>
-<script src="vendor/purify.min.js?v=2"></script>
-<script src="store.js?v=2"></script>
-<script src="md.js?v=2"></script>
-<script src="graph.js?v=2"></script>
-<script src="app.js?v=2"></script>
+<script src="vendor/marked.min.js?v=3"></script>
+<script src="vendor/purify.min.js?v=3"></script>
+<script src="store.js?v=3"></script>
+<script src="md.js?v=3"></script>
+<script src="graph.js?v=3"></script>
+<script src="guide.js?v=3"></script>
+<script src="app.js?v=3"></script>
 </body>
 </html>

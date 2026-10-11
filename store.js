@@ -1,5 +1,5 @@
 'use strict';
-/* Слюда — хранилище.
+/* MindButter — хранилище.
    Два вида хранилища с одним интерфейсом:
      BrowserVault — IndexedDB этого браузера (работает везде, включая телефон);
      FolderVault  — настоящая папка на диске через File System Access API (Chrome/Edge на компьютере).
@@ -22,7 +22,7 @@ function joinPath(dir, name){ return dir ? dir + '/' + name : name; }
 function under(path, dir){ return path === dir || path.indexOf(dir + '/') === 0; }
 
 /* ---------- IndexedDB ---------- */
-const DB_NAME = 'sluda', DB_VER = 1;
+const DB_NAME = 'mindbutter', DB_VER = 1;
 let _db = null;
 function idb(){
   if(_db) return Promise.resolve(_db);
@@ -48,7 +48,7 @@ const meta = {
 
 /* ---------- хранилище в браузере ---------- */
 class BrowserVault {
-  constructor(){ this.kind = 'browser'; this.name = 'В браузере'; }
+  constructor(){ this.kind = 'browser'; this.name = 'Заметки'; }
 
   async scan(){
     const db = await idb();

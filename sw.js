@@ -1,8 +1,8 @@
-/* Слюда — service worker: офлайн-работа после первого открытия.
+/* MindButter — service worker: офлайн-работа после первого открытия.
    Сначала сеть (всегда свежая версия), без сети — копия из кеша. Только файлы самого приложения. */
-const CACHE = 'sluda-v2';
-const ASSETS = ['./', './index.html', './style.css?v=2', './store.js?v=2', './md.js?v=2', './graph.js?v=2', './app.js?v=2',
-  './vendor/marked.min.js?v=2', './vendor/purify.min.js?v=2', './icon.svg', './manifest.webmanifest'];
+const CACHE = 'mindbutter-v3';
+const ASSETS = ['./', './index.html', './style.css?v=3', './store.js?v=3', './md.js?v=3', './graph.js?v=3', './guide.js?v=3', './app.js?v=3',
+  './vendor/marked.min.js?v=3', './vendor/purify.min.js?v=3', './icon.svg', './manifest.webmanifest'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE)
@@ -11,7 +11,7 @@ self.addEventListener('install', (e) => {
 });
 self.addEventListener('activate', (e) => {
   e.waitUntil(caches.keys()
-    .then((keys) => Promise.all(keys.filter((k) => k.indexOf('sluda-') === 0 && k !== CACHE).map((k) => caches.delete(k))))
+    .then((keys) => Promise.all(keys.filter((k) => (k.indexOf('mindbutter-') === 0 || k.indexOf('sluda-') === 0) && k !== CACHE).map((k) => caches.delete(k))))
     .then(() => self.clients.claim()));
 });
 self.addEventListener('fetch', (e) => {

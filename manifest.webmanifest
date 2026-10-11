@@ -1,11 +1,11 @@
 {
-  "name": "Слюда — заметки",
-  "short_name": "Слюда",
+  "name": "MindButter",
+  "short_name": "MindButter",
   "description": "Заметки в markdown со ссылками, обратными ссылками, тегами и графом.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#1b1d22",
-  "theme_color": "#1b1d22",
+  "background_color": "#f7f7f3",
+  "theme_color": "#f7f7f3",
   "icons": [{"src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any"}]
 }
