@@ -11,7 +11,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Literata:ital,opsz,wght@0,7..72,400;0,7..72,600;1,7..72,400&display=swap">
-<link rel="stylesheet" href="style.css?v=3">
+<link rel="stylesheet" href="style.css?v=4">
 <script>
   /* тема до первой отрисовки — без мигания */
   (function(){ try{
@@ -115,6 +115,7 @@
     </div>
 
     <footer class="status" id="status">
+      <button class="st-sync" id="st-sync" hidden></button>
       <span id="st-save"></span>
       <span class="st-fill"></span>
       <span id="st-links"></span>
@@ -187,6 +188,30 @@
   </form>
 </div>
 
+<!-- синхронизация через GitHub -->
+<div class="modal" id="sync" hidden>
+  <form class="modal-box sync-box" id="sync-form" autocomplete="off">
+    <h2>Синхронизация через GitHub</h2>
+    <p class="mut">Заметки хранятся в твоём приватном репозитории. Каждое устройство отправляет туда изменения и забирает чужие — сами, в фоне.</p>
+    <ol class="sync-steps">
+      <li>Создай <b>приватный</b> репозиторий, например <b>mindbutter-notes</b>: <a href="https://github.com/new" target="_blank" rel="noopener noreferrer">github.com/new</a></li>
+      <li>Создай токен: <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener noreferrer">новый токен</a>. Repository access → <i>Only select repositories</i> → этот репозиторий. Permissions → <i>Contents</i> → <i>Read and write</i>.</li>
+      <li>Вставь репозиторий и токен ниже. На втором устройстве — то же самое.</li>
+    </ol>
+    <label class="sync-lbl" for="sync-repo">Репозиторий</label>
+    <input class="field" id="sync-repo" placeholder="логин/mindbutter-notes" spellcheck="false" autocapitalize="off">
+    <label class="sync-lbl" for="sync-token">Токен</label>
+    <input class="field" id="sync-token" type="password" placeholder="github_pat_…" spellcheck="false" autocapitalize="off">
+    <p class="sync-status" id="sync-status" role="status"></p>
+    <div class="btnrow end">
+      <button type="button" class="btn ghost" id="sync-off" hidden>Отключить</button>
+      <button type="button" class="btn ghost" id="sync-close">Закрыть</button>
+      <button type="submit" class="btn" id="sync-go">Подключить</button>
+    </div>
+    <p class="fine">Токен хранится только в этом браузере и открывает доступ только к выбранному репозиторию. Если одну заметку изменили на двух устройствах, обе версии сохранятся.</p>
+  </form>
+</div>
+
 <!-- инструкция: картинка, текст, озвучка -->
 <div class="modal guide" id="guide" hidden>
   <div class="guide-box" role="dialog" aria-modal="true" aria-labelledby="guide-title">
@@ -214,12 +239,13 @@
 <div class="toast" id="toast" hidden></div>
 <input type="file" id="import-input" webkitdirectory multiple hidden>
 
-<script src="vendor/marked.min.js?v=3"></script>
-<script src="vendor/purify.min.js?v=3"></script>
-<script src="store.js?v=3"></script>
-<script src="md.js?v=3"></script>
-<script src="graph.js?v=3"></script>
-<script src="guide.js?v=3"></script>
-<script src="app.js?v=3"></script>
+<script src="vendor/marked.min.js?v=4"></script>
+<script src="vendor/purify.min.js?v=4"></script>
+<script src="store.js?v=4"></script>
+<script src="md.js?v=4"></script>
+<script src="graph.js?v=4"></script>
+<script src="guide.js?v=4"></script>
+<script src="sync.js?v=4"></script>
+<script src="app.js?v=4"></script>
 </body>
 </html>

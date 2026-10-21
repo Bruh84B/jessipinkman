@@ -121,6 +121,7 @@ async function boot(){
   syncThemeIcon();
   bindUI();
   Guide.bind();
+  GHSync.bind();
   if(window.SLUDA_DEMO) document.documentElement.classList.add('demo');
   if(!window.SLUDA_DEMO && 'serviceWorker' in navigator && /^https?:$/.test(location.protocol)){
     navigator.serviceWorker.register('sw.js').catch(() => {});
@@ -194,6 +195,7 @@ async function openVault(v){
   S.collapsed = new Set(LS.get('collapsed.' + vaultKey(), []));
   renderTree(); renderTags();
   setSave('');
+  GHSync.onVaultOpen();
   if(!LS.get('guideSeen', false)) setTimeout(() => { if($('#start').hidden) Guide.open(0); }, 350);
   const h = location.hash;
   if(h && h !== '#') return route();
@@ -474,6 +476,7 @@ function flushSave(){
       if(f){ f.text = text; f.mtime = mtime; f.parsed = parseNote(text); }
       if(!S.dirty) setSave('сохранено');
       afterTextChange();
+      GHSync.soon();
     } catch(e){
       S.dirty = true;
       setSave('не сохранено');
@@ -502,6 +505,7 @@ async function createFile(path, data){
   saveCollapsed();
   reindex();
   refreshAll();
+  GHSync.soon();
   return path;
 }
 async function newNote(dir){
@@ -552,6 +556,7 @@ async function deletePath(path){
     showView('empty');
   }
   refreshAll();
+  GHSync.soon();
   toast('Удалено');
 }
 
@@ -611,6 +616,7 @@ async function renamePath(from, to){
   }
   if(S.view === 'note' && S.mode === 'read' && S.curType === 'md') renderPreview();
   refreshAll();
+  GHSync.soon();
   if(rewrites.length) toast('Ссылки обновлены в ' + rewrites.length + ' ' + plural(rewrites.length, 'заметке', 'заметках', 'заметках'));
   return true;
 }
@@ -1209,6 +1215,7 @@ async function importFiles(fileList){
   }
   reindex();
   refreshAll();
+  GHSync.soon();
   toast('Добавлено: ' + n + (renamed ? ' · с новым именем из-за совпадений: ' + renamed : ''), 4000);
 }
 function vaultMenu(btn){
@@ -1217,6 +1224,7 @@ function vaultMenu(btn){
     {label: S.vault ? (S.vault.kind === 'folder' ? 'Папка: ' + S.vault.name : 'Хранится в этом браузере') : 'Хранилище не выбрано', disabled: true},
     {label: 'Скачать всё в zip', run: exportZip},
     {label: 'Добавить заметки из папки…', run: () => $('#import-input').click()},
+    {label: 'Синхронизация с GitHub…', run: () => GHSync.openSettings()},
     {label: 'Перечитать хранилище', run: () => rescan(false)},
     {label: 'Инструкция', run: () => Guide.open(0)},
     '-',
@@ -1289,7 +1297,7 @@ function closeDialog(v){
   if(done) done(v);
 }
 function askText(message, value){ return openDialog(message, {input: true, value, ok: 'Готово'}); }
-function askConfirm(message){ return openDialog(message, {ok: 'Удалить', danger: true}).then(v => v === true); }
+function askConfirm(message, ok){ return openDialog(message, {ok: ok || 'Удалить', danger: true}).then(v => v === true); }
 
 /* ================= меню ================= */
 function showMenu(items, x, y){
@@ -1578,6 +1586,7 @@ function bindUI(){
     const code = e.code;
     if(!$('#dialog').hidden){ if(e.key === 'Escape'){ e.preventDefault(); closeDialog(null); } return; }
     if(Guide.isOpen()){ Guide.key(e); return; }
+    if(!$('#sync').hidden){ if(e.key === 'Escape'){ e.preventDefault(); GHSync.closeSettings(); } return; }
     if(e.key === 'Escape'){
       if(!$('#switcher').hidden){ closeSwitcher(); return; }
       if(!$('#menu').hidden){ hideMenu(); return; }
@@ -1710,10 +1719,10 @@ MindButter — заметки в обычных файлах markdown, связ�
 1. **В браузере** — работает везде, включая телефон.
 2. **Папка на компьютере** — заметки становятся обычными файлами .md. Можно открыть и существующую папку Obsidian. Нужен Chrome, Edge или Яндекс Браузер на компьютере.
 
-## GitHub
-Само приложение — статичные файлы, поэтому его можно выложить на GitHub Pages и открывать по ссылке. Заметки при этом **не** уходят на GitHub: они остаются у тебя.
+## Компьютер и телефон вместе
+Синхронизация — через твой **приватный** репозиторий на GitHub: кнопка «Хранилище» → «Синхронизация с GitHub…». Там же короткая инструкция, как создать репозиторий и токен. На каждом устройстве вводишь одно и то же — и заметки ходят между ними сами.
 
-Если хочешь хранить сами заметки в GitHub — выбери «Папка на компьютере», укажи папку git-репозитория и делай коммиты обычным способом.
+Без этой настройки заметки никуда не уходят и остаются только на этом устройстве.
 `,
 };
 async function seedWelcome(v){
