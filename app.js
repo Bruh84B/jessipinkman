@@ -94,7 +94,7 @@ const S = {
   selectedFolder: '',
   gscope: LS.get('gscope', 'all'),
   graph: null,
-  pendingSub: null, pendingFind: null, focusTitle: false,
+  pendingSub: null, pendingFind: null, focusTitle: false, focusDaily: false,
   sug: null, sw: null, menuItems: null,
 };
 function vaultKey(){ return S.vault ? S.vault.kind + ':' + S.vault.name : ''; }
@@ -265,7 +265,7 @@ async function openNote(path){
   const ed = $('#editor');
   hideSuggest();
   if(f.type === 'md'){
-    if(S.focusTitle && S.mode === 'read'){ S.mode = 'edit'; LS.set('mode', 'edit'); }
+    if((S.focusTitle || S.focusDaily) && S.mode === 'read'){ S.mode = 'edit'; LS.set('mode', 'edit'); }
     ed.value = f.text || '';
     S.dirty = false;
     ed.scrollTop = 0;
@@ -283,6 +283,15 @@ async function openNote(path){
   highlightTree(); renderRight(); renderStatus();
   closeDrawers();
   if(S.focusTitle){ S.focusTitle = false; title.focus(); title.select(); }
+  if(S.focusDaily){
+    S.focusDaily = false;
+    /* курсор — в конец первой пустой строки шаблона, иначе в конец заметки */
+    const t = ed.value;
+    let at = t.length;
+    const m = /^(Хорошо|Мешало):[ \t]*$/m.exec(t);
+    if(m) at = m.index + m[0].length;
+    ed.focus(); ed.setSelectionRange(at, at);
+  }
   if(S.pendingSub){ const s = S.pendingSub; S.pendingSub = null; setTimeout(() => scrollToHeading(s), 30); }
   if(S.pendingFind){ const q = S.pendingFind; S.pendingFind = null; setTimeout(() => findInNote(q), 30); }
 }
@@ -533,10 +542,17 @@ async function newFolder(dir){
   saveCollapsed();
   renderTree();
 }
+/* строка дня: две строки, заполнить за минуту */
+const DAILY_TEMPLATE = 'Хорошо: \nМешало: \n';
 async function dailyNote(){
   if(!S.vault) return;
+  await flushSave(); /* если сегодняшняя уже открыта и правится — не потерять набранное */
   const path = 'Ежедневные/' + todayKey() + '.md';
-  if(!S.files.has(path)) await createFile(path, '');
+  /* сегодняшнюю могли начать на другом устройстве — сначала забираем её, иначе выйдет конфликт.
+     Ждём не дольше 4 секунд: без сети заметка создаётся сразу */
+  if(!S.files.has(path) && GHSync.enabled()) await Promise.race([GHSync.sync(false), new Promise(r => setTimeout(r, 4000))]);
+  if(!S.files.has(path)) await createFile(path, DAILY_TEMPLATE);
+  S.focusDaily = true;
   navigate(path);
 }
 
