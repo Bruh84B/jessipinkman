@@ -11,7 +11,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Literata:ital,opsz,wght@0,7..72,400;0,7..72,600;1,7..72,400&display=swap">
-<link rel="stylesheet" href="style.css?v=4">
+<link rel="stylesheet" href="style.css?v=5">
 <script>
   /* тема до первой отрисовки — без мигания */
   (function(){ try{
@@ -70,6 +70,7 @@
       <button class="ib" data-cmd="toggle-left" data-icon="panel-left" title="Панель слева" aria-label="Панель слева"></button>
       <button class="ib hide-narrow" data-cmd="back" data-icon="left" title="Назад (Alt+←)" aria-label="Назад"></button>
       <button class="ib hide-narrow" data-cmd="forward" data-icon="right" title="Вперёд (Alt+→)" aria-label="Вперёд"></button>
+      <button class="ib only-narrow" data-cmd="daily" data-icon="calendar" title="Заметка на сегодня" aria-label="Заметка на сегодня"></button>
       <div class="crumbs" id="crumbs"></div>
       <input class="title-input" id="title" spellcheck="false" autocomplete="off" aria-label="Название заметки" title="Название заметки — можно изменить">
       <div class="seg-mode" id="mode-seg" role="group" aria-label="Режим">
@@ -239,13 +240,13 @@
 <div class="toast" id="toast" hidden></div>
 <input type="file" id="import-input" webkitdirectory multiple hidden>
 
-<script src="vendor/marked.min.js?v=4"></script>
-<script src="vendor/purify.min.js?v=4"></script>
-<script src="store.js?v=4"></script>
-<script src="md.js?v=4"></script>
-<script src="graph.js?v=4"></script>
-<script src="guide.js?v=4"></script>
-<script src="sync.js?v=4"></script>
-<script src="app.js?v=4"></script>
+<script src="vendor/marked.min.js?v=5"></script>
+<script src="vendor/purify.min.js?v=5"></script>
+<script src="store.js?v=5"></script>
+<script src="md.js?v=5"></script>
+<script src="graph.js?v=5"></script>
+<script src="guide.js?v=5"></script>
+<script src="sync.js?v=5"></script>
+<script src="app.js?v=5"></script>
 </body>
 </html>

@@ -1,8 +1,8 @@
 /* MindButter — service worker: офлайн-работа после первого открытия.
    Сначала сеть (всегда свежая версия), без сети — копия из кеша. Только файлы самого приложения. */
-const CACHE = 'mindbutter-v4';
-const ASSETS = ['./', './index.html', './style.css?v=4', './store.js?v=4', './md.js?v=4', './graph.js?v=4', './guide.js?v=4', './sync.js?v=4', './app.js?v=4',
-  './vendor/marked.min.js?v=4', './vendor/purify.min.js?v=4', './icon.svg', './manifest.webmanifest'];
+const CACHE = 'mindbutter-v5';
+const ASSETS = ['./', './index.html', './style.css?v=5', './store.js?v=5', './md.js?v=5', './graph.js?v=5', './guide.js?v=5', './sync.js?v=5', './app.js?v=5',
+  './vendor/marked.min.js?v=5', './vendor/purify.min.js?v=5', './icon.svg', './manifest.webmanifest'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE)
